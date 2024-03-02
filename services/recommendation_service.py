@@ -1,12 +1,8 @@
-import csv
 import math
 from models.event import Event
 
-import pandas as pd
-import json
 from models.paginated import Paginated
 
-from models.user import User
 from utils.event_utils import EventUtils
 from utils.pagination_utils import PaginationUtils
 from utils.user_utils import UserUtils
