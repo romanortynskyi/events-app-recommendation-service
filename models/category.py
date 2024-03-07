@@ -4,6 +4,5 @@ from models.model import Model
 
 @dataclass
 class Category(Model):
-  attributes = ['id', 'name', 'events_count', 'created_at', 'updated_at']
-  name: str
+  attributes = ['id', 'events_count', 'created_at', 'updated_at']
   events_count: int

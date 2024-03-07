@@ -9,7 +9,6 @@ class CategoryUtils:
   def from_dict(dict: Dict) -> Category:
     return Category(
       id = dict['id'],
-      name = dict['name'],
       events_count = dict['eventsCount'],
       created_at = dict['createdAt'],
       updated_at = dict['updatedAt'],
@@ -30,4 +29,3 @@ class CategoryUtils:
     csv_buffer.close()
 
     return csv_line  
-

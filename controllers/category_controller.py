@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, request
 
 from services.category_service import CategoryService
 from utils.camel_case_utils import CamelCaseUtils
@@ -13,5 +13,10 @@ convert_to_camel_case_dict = lambda event: CamelCaseUtils.to_camel_case_dict(eve
 @category_bp.post('/')
 def add_category():
   category = CategoryUtils.from_dict(request.json)
+  
+  created_category = CamelCaseUtils.to_camel_case_dict(category_service.add_category(category))
 
-  return CamelCaseUtils.to_camel_case_dict(category_service.add_category(category))
+  response = jsonify(created_category)
+  response.status_code = 201
+
+  return response
