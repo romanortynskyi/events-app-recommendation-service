@@ -22,7 +22,7 @@ class RecommendationService:
     condition = lambda user: user.id == id
     user = next((user for user in users if condition(user)), None)
 
-    events_data = EventUtils.read_csv(events_csv)
+    events_data = EventUtils.from_csv_to_data_frame(events_csv)
 
     filtered_data = events_data[events_data['categories'].apply(lambda x: any(category_id in x for category_id in user.categories))]
 

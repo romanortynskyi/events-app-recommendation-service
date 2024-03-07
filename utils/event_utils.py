@@ -1,12 +1,9 @@
 import json
-from typing import Dict, List
-import csv
+from typing import Dict
 import io
-
 import pandas as pd
 
 from models.event import Event
-from models.user import User
 
 class EventUtils:
   @staticmethod
@@ -25,10 +22,10 @@ class EventUtils:
     )
 
   @staticmethod
-  def read_csv(events_csv: str):
+  def from_csv_to_data_frame(events_csv: str):
     csv_file = io.StringIO(events_csv)
-    data = pd.read_csv(csv_file)
+    data_frame = pd.read_csv(csv_file)
 
-    data['categories'] = data['categories'].apply(lambda categoriesJSON: json.loads(categoriesJSON))
+    data_frame['categories'] = data_frame['categories'].apply(lambda categoriesJSON: json.loads(categoriesJSON))
 
-    return data
+    return data_frame
