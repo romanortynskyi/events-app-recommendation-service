@@ -3,6 +3,7 @@ from io import StringIO
 from typing import Dict
 
 from models.category import Category
+from utils.csv_utils import CsvUtils
 
 class CategoryUtils:
   @staticmethod
@@ -16,16 +17,4 @@ class CategoryUtils:
   
   @staticmethod
   def to_csv(category):
-    attributes = Category.attributes
-    values = [getattr(category, attr) for attr in attributes]
-
-    csv_buffer = StringIO()
-
-    csv_writer = csv.writer(csv_buffer, quoting=csv.QUOTE_NONNUMERIC)
-    csv_writer.writerow(values)
-
-    csv_line = csv_buffer.getvalue().strip()
-    
-    csv_buffer.close()
-
-    return csv_line  
+    return CsvUtils.to_csv(category, Category.attributes)
