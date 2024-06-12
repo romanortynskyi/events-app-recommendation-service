@@ -53,7 +53,7 @@ class RecommendationService:
 
   def get_recommended_places(self, skip: int, limit: int) -> Paginated[int]:
     events_csv = upload_service.read_text_file(DatasetFileKeyEnum.EVENTS.value)
-    print(events_csv)
+
     events_df = EventUtils.from_csv_to_data_frame(events_csv)
 
     event_categories_csv = upload_service.read_text_file(DatasetFileKeyEnum.EVENT_CATEGORIES.value)
@@ -69,20 +69,24 @@ class RecommendationService:
     )
 
     events_df.drop('eventId', axis=1, inplace=True)
-
     events_df.rename(columns = { 'categoryId': 'categoryIds' }, inplace = True)
 
     places_csv = upload_service.read_text_file(DatasetFileKeyEnum.PLACES.value)
     places_df = PlaceUtils.from_csv_to_data_frame(places_csv)
-    print(events_csv)
+
     merged_df = pd.merge(events_df, places_df, left_on='placeId', right_on='id', how='left')
 
     merged_df['percentageSold'] = merged_df['soldTicketsCount'] / merged_df['totalTicketsCount']
-
+    
     X = merged_df[['totalTicketsCount', 'percentageSold']]
     y = merged_df['soldTicketsCount'] * 100
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+      X,
+      y,
+      test_size = 0.2,
+      random_state = 42,
+    )
 
     model = RandomForestRegressor()
     model.fit(X_train, y_train)

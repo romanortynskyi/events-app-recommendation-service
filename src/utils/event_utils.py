@@ -30,4 +30,6 @@ class EventUtils:
 
   @staticmethod
   def to_csv(event):
-    return CsvUtils.to_csv(event, Event.attributes)
+    attributes = filter(lambda attribute: attribute != 'categories', Event.attributes)
+
+    return CsvUtils.to_csv(event, attributes)

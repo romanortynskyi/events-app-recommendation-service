@@ -2,7 +2,7 @@ from flask import Flask
 from dotenv import load_dotenv
 
 from controllers.recommendation_controller import recommendation_bp
-from controllers.event_controller import event_bp
+from modules.event.event_controller import event_bp
 from controllers.category_controller import category_bp
 from controllers.place_controller import place_bp
 

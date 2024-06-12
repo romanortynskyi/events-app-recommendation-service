@@ -1,7 +1,6 @@
-import json
 from flask import Blueprint, jsonify, request
 
-from services.event_service import EventService
+from modules.event.services.event_service import EventService
 from utils.camel_case_utils import CamelCaseUtils
 from utils.event_utils import EventUtils
 

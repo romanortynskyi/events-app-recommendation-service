@@ -5,7 +5,12 @@ import os
 
 class UploadService:
   def __init__(self):
-    self.s3_client = boto3.client('s3')
+    self.s3_client = boto3.client(
+      's3',
+      aws_access_key_id = os.environ.get('S3_ACCESS_KEY_ID'),
+      aws_secret_access_key = os.environ.get('S3_SECRET_ACCESS_KEY'),
+      region_name = os.environ.get('S3_REGION'),
+    )
     self.bucket = os.environ.get('S3_BUCKET')
 
   def file_exists(self, key: str) -> bool:

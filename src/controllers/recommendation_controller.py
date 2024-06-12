@@ -41,7 +41,7 @@ def get_recommended_places():
 
     paginated_places = recommendation_service.get_recommended_places(skip, limit)
       
-    places = list(map(convert_to_camel_case_dict, paginated_places.items))
+    places = paginated_places.items
 
     return {
       'items': places,
