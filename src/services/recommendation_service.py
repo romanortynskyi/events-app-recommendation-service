@@ -2,7 +2,10 @@ import math
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 
 from enums.dataset_file_key_enum import DatasetFileKeyEnum
 from utils.place_utils import PlaceUtils
@@ -53,78 +56,80 @@ class RecommendationService:
 
   def get_recommended_places(self, skip: int, limit: int) -> Paginated[int]:
     events_csv = upload_service.read_text_file(DatasetFileKeyEnum.EVENTS.value)
-
     events_df = EventUtils.from_csv_to_data_frame(events_csv)
-
-    event_categories_csv = upload_service.read_text_file(DatasetFileKeyEnum.EVENT_CATEGORIES.value)
-    event_categories_df = EventCategoryUtils.from_csv_to_data_frame(event_categories_csv)
-
-    category_ids_grouped = event_categories_df.groupby('eventId')['categoryId'].apply(list).reset_index()
-
-    events_df = events_df.merge(
-      category_ids_grouped,
-      how = 'left',
-      left_on = 'id',
-      right_on = 'eventId',
-    )
-
-    events_df.drop('eventId', axis=1, inplace=True)
-    events_df.rename(columns = { 'categoryId': 'categoryIds' }, inplace = True)
 
     places_csv = upload_service.read_text_file(DatasetFileKeyEnum.PLACES.value)
     places_df = PlaceUtils.from_csv_to_data_frame(places_csv)
 
-    merged_df = pd.merge(
-      events_df,
-      places_df,
-      left_on = 'placeId',
-      right_on = 'id',
-      how = 'left',
-    )
+    merged_data = pd.merge(events_df, places_df, left_on='placeId', right_on='id')
 
-    merged_df['percentageSold'] = merged_df['soldTicketsCount'] / merged_df['totalTicketsCount']
-    
-    X = merged_df[['totalTicketsCount', 'percentageSold']]
-    y = merged_df['soldTicketsCount'] * 100
+    # Step 2: Feature engineering and preparation
+
+    merged_data['ticketsSoldPercentage'] = (merged_data['soldTicketsCount'] / merged_data['totalTicketsCount']) * 100
+
+    X = merged_data[['placeId', 'ticketsSoldPercentage']]
+    y = merged_data['soldTicketsCount']
+
+    X = pd.get_dummies(X, columns=['placeId'])
+
+    # Step 3: Splitting data into train and test sets, and scaling
 
     X_train, X_test, y_train, y_test = train_test_split(
-      X,
-      y,
-      test_size = 0.2,
-      random_state = 42,
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
     )
 
-    model = RandomForestRegressor()
-    model.fit(X_train, y_train)
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
 
-    predictions = model.predict(X_test)
+    # Step 4: Model definition, compilation, and training
 
-    places_with_predictions = pd.concat(
-      [
+    model = Sequential()
+    model.add(Dense(64, input_dim=X_train.shape[1], activation='relu'))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(1))
+
+    model.compile(optimizer='adam', loss='mean_squared_error')
+
+    model.fit(
+        X_train,
+        y_train,
+        epochs=100,
+        batch_size=32,
+        validation_split=0.2,
+        verbose=0,
+    )
+
+    # Step 5: Predictions and aggregation
+
+    predictions = model.predict(X)
+
+    merged_data['predictedSales'] = predictions
+
+    predicted_sales_by_place = merged_data.groupby('placeId')['predictedSales'].sum().reset_index()
+
+    predicted_sales = pd.merge(
+        predicted_sales_by_place,
         places_df,
-        pd.Series(
-          predictions,
-          name = 'predictedSales',
-        )
-      ],
-      axis = 1,
+        left_on='placeId',
+        right_on='id',
     )
 
-    sorted_places = places_with_predictions.sort_values(
-      by = 'predictedSales',
-      ascending = False,
+    total_predicted_sales = predicted_sales['predictedSales'].sum()
+
+    predicted_sales['predictedSalesPercentage'] = (predicted_sales['predictedSales'] / total_predicted_sales) * 100
+
+    sorted_place_dicts = sorted(
+      predicted_sales.to_dict('records'),
+      key = lambda place: place['predictedSalesPercentage'],
+      reverse = True,
     )
 
-    items = []
-
-    for index, place in sorted_places.iterrows():
-      items.append({
-        'id': place['id'],
-        'predictedSales': place['predictedSales'],
-      })
-
-    paginated_items = PaginationUtils.paginate_list(items, skip, limit)
-    total_items_count = len(sorted_places)
+    paginated_items = PaginationUtils.paginate_list(sorted_place_dicts, skip, limit)
+    total_items_count = len(sorted_place_dicts)
     total_pages_count = math.ceil(total_items_count / limit)
 
     return Paginated(
