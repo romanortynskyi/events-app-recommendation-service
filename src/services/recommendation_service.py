@@ -74,7 +74,13 @@ class RecommendationService:
     places_csv = upload_service.read_text_file(DatasetFileKeyEnum.PLACES.value)
     places_df = PlaceUtils.from_csv_to_data_frame(places_csv)
 
-    merged_df = pd.merge(events_df, places_df, left_on='placeId', right_on='id', how='left')
+    merged_df = pd.merge(
+      events_df,
+      places_df,
+      left_on = 'placeId',
+      right_on = 'id',
+      how = 'left',
+    )
 
     merged_df['percentageSold'] = merged_df['soldTicketsCount'] / merged_df['totalTicketsCount']
     
@@ -93,21 +99,36 @@ class RecommendationService:
 
     predictions = model.predict(X_test)
 
-    places_with_predictions = pd.concat([places_df, pd.Series(predictions, name='predictedSales')], axis=1)
+    places_with_predictions = pd.concat(
+      [
+        places_df,
+        pd.Series(
+          predictions,
+          name = 'predictedSales',
+        )
+      ],
+      axis = 1,
+    )
 
-    sorted_places = places_with_predictions.sort_values(by='predictedSales', ascending=False)
+    sorted_places = places_with_predictions.sort_values(
+      by = 'predictedSales',
+      ascending = False,
+    )
 
-    place_ids = []
+    items = []
 
     for index, place in sorted_places.iterrows():
-      place_ids.append(place['id'])
+      items.append({
+        'id': place['id'],
+        'predictedSales': place['predictedSales'],
+      })
 
-    paginated_place_ids = PaginationUtils.paginate_list(place_ids, skip, limit)
+    paginated_items = PaginationUtils.paginate_list(items, skip, limit)
     total_items_count = len(sorted_places)
     total_pages_count = math.ceil(total_items_count / limit)
 
     return Paginated(
-      items = paginated_place_ids,
+      items = paginated_items,
       total_pages_count = total_pages_count,
       total_items_count = total_items_count,
     )
