@@ -61,9 +61,12 @@ class RecommendationService:
     places_csv = upload_service.read_text_file(DatasetFileKeyEnum.PLACES.value)
     places_df = PlaceUtils.from_csv_to_data_frame(places_csv)
 
-    merged_data = pd.merge(events_df, places_df, left_on='placeId', right_on='id')
-
-    # Step 2: Feature engineering and preparation
+    merged_data = pd.merge(
+      events_df,
+      places_df,
+      left_on = 'placeId',
+      right_on = 'id',
+    )
 
     merged_data['ticketsSoldPercentage'] = (merged_data['soldTicketsCount'] / merged_data['totalTicketsCount']) * 100
 
@@ -71,8 +74,6 @@ class RecommendationService:
     y = merged_data['soldTicketsCount']
 
     X = pd.get_dummies(X, columns=['placeId'])
-
-    # Step 3: Splitting data into train and test sets, and scaling
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -85,25 +86,21 @@ class RecommendationService:
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    # Step 4: Model definition, compilation, and training
-
     model = Sequential()
-    model.add(Dense(64, input_dim=X_train.shape[1], activation='relu'))
-    model.add(Dense(32, activation='relu'))
+    model.add(Dense(64, input_dim = X_train.shape[1], activation = 'relu'))
+    model.add(Dense(32, activation = 'relu'))
     model.add(Dense(1))
 
-    model.compile(optimizer='adam', loss='mean_squared_error')
+    model.compile(optimizer = 'adam', loss = 'mean_squared_error')
 
     model.fit(
         X_train,
         y_train,
-        epochs=100,
-        batch_size=32,
-        validation_split=0.2,
-        verbose=0,
+        epochs = 100,
+        batch_size = 32,
+        validation_split = 0.2,
+        verbose = 0,
     )
-
-    # Step 5: Predictions and aggregation
 
     predictions = model.predict(X)
 
@@ -114,8 +111,8 @@ class RecommendationService:
     predicted_sales = pd.merge(
         predicted_sales_by_place,
         places_df,
-        left_on='placeId',
-        right_on='id',
+        left_on = 'placeId',
+        right_on = 'id',
     )
 
     total_predicted_sales = predicted_sales['predictedSales'].sum()
