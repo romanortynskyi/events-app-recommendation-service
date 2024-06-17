@@ -94,12 +94,12 @@ class RecommendationService:
     model.compile(optimizer = 'adam', loss = 'mean_squared_error')
 
     model.fit(
-        X_train,
-        y_train,
-        epochs = 100,
-        batch_size = 32,
-        validation_split = 0.2,
-        verbose = 0,
+      X_train,
+      y_train,
+      epochs = 100,
+      batch_size = 32,
+      validation_split = 0.2,
+      verbose = 0,
     )
 
     predictions = model.predict(X)
@@ -118,9 +118,15 @@ class RecommendationService:
     total_predicted_sales = predicted_sales['predictedSales'].sum()
 
     predicted_sales['predictedSalesPercentage'] = (predicted_sales['predictedSales'] / total_predicted_sales) * 100
+    
+    place_dicts = predicted_sales.to_dict('records')
+    place_dicts = list(map(lambda place: {
+      'id': place['id'],
+      'predictedSalesPercentage': 0 if place['predictedSalesPercentage'] < 0 or place['predictedSalesPercentage'] > 100 else round(place['predictedSalesPercentage'], 2),
+    }, place_dicts))
 
     sorted_place_dicts = sorted(
-      predicted_sales.to_dict('records'),
+      place_dicts,
       key = lambda place: place['predictedSalesPercentage'],
       reverse = True,
     )
